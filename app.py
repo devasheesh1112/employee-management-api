@@ -23,29 +23,43 @@ def init_db():
         """)
 
 
-# HOME
 @app.route("/employees", methods=["GET"])
 def get_employees():
-    name = request.args.get("name", "").strip()
-    role = request.args.get("role", "").strip()
+    try:
+        page = int(request.args.get("page", 1))
+        limit = int(request.args.get("limit", 5))
 
-    query = "SELECT id, name, role FROM employees WHERE 1=1"
-    params = []
+        if page < 1 or limit < 1 or limit > 100:
+            return jsonify({
+                "error": "page must be >= 1 and limit must be between 1 and 100"
+            }), 400
 
-    if name:
-        query += " AND name LIKE ?"
-        params.append(f"%{name}%")
+        offset = (page - 1) * limit
 
-    if role:
-        query += " AND role LIKE ?"
-        params.append(f"%{role}%")
+        with get_db_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, name, role
+                FROM employees
+                ORDER BY id
+                LIMIT ? OFFSET ?
+                """,
+                (limit, offset)
+            ).fetchall()
 
-    query += " ORDER BY id"
+            total = conn.execute(
+                "SELECT COUNT(*) FROM employees"
+            ).fetchone()[0]
 
-    with get_db_connection() as conn:
-        rows = conn.execute(query, params).fetchall()
+        return jsonify({
+            "page": page,
+            "limit": limit,
+            "total": total,
+            "employees": [dict(row) for row in rows]
+        }), 200
 
-    return jsonify([dict(row) for row in rows])
+    except ValueError:
+        return jsonify({"error": "page and limit must be integers"}), 400
 
 
 # CREATE: Add employee

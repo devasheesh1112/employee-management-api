@@ -24,18 +24,26 @@ def init_db():
 
 
 # HOME
-@app.route("/", methods=["GET"])
-def home():
-    return jsonify({"message": "Employee Management API is running"})
-
-
-# READ: Get all employees
 @app.route("/employees", methods=["GET"])
 def get_employees():
+    name = request.args.get("name", "").strip()
+    role = request.args.get("role", "").strip()
+
+    query = "SELECT id, name, role FROM employees WHERE 1=1"
+    params = []
+
+    if name:
+        query += " AND name LIKE ?"
+        params.append(f"%{name}%")
+
+    if role:
+        query += " AND role LIKE ?"
+        params.append(f"%{role}%")
+
+    query += " ORDER BY id"
+
     with get_db_connection() as conn:
-        rows = conn.execute(
-            "SELECT id, name, role FROM employees ORDER BY id"
-        ).fetchall()
+        rows = conn.execute(query, params).fetchall()
 
     return jsonify([dict(row) for row in rows])
 

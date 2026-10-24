@@ -129,6 +129,23 @@ def delete_employee(employee_id):
     return jsonify({"message": "Employee deleted successfully"}), 200
 
 
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({"error": "Resource not found"}), 404
+
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+    return jsonify({"error": "HTTP method not allowed"}), 405
+
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    return jsonify({"error": "Internal server error"}), 500
+
+
+
 if __name__ == "__main__":
     init_db()
     app.run(debug=True, port=5000)
